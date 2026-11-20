@@ -12,6 +12,7 @@ import StudioPage from './pages/StudioPage';
 import AuthPage from './pages/AuthPage';
 import { HistoryPage, LikedPage, PlaylistsPage, PlaylistPage, WatchLaterPage } from './pages/LibraryPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import FriendsPage from './pages/FriendsPage';
 import './styles.css';
 
 function RouteLoader() { return <div className="loading-screen">Loading…</div>; }
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="studio" element={<StudioPage/>}/>
       <Route path="settings" element={<PlaceholderPage/>}/>
       <Route path="watch-later" element={<WatchLaterPage/>}/>
+      <Route path="friends" element={<FriendsPage/>}/>
       <Route path="explore/:section" element={<PlaceholderPage/>}/>
       <Route path="*" element={<PlaceholderPage/>}/>
     </Route>
