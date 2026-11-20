@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   subscribers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   subscriptions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // Friendships are mutual; request/accept routes must update both users.
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   likedVideos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],
   watchLater: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],
   dislikedVideos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],

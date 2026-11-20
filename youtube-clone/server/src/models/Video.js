@@ -8,6 +8,7 @@ const videoSchema = new mongoose.Schema({
   duration: { type: Number, default: 0 },
   category: { type: String, default: 'All' },
   visibility: { type: String, enum: ['public', 'unlisted', 'private'], default: 'public' },
+  allowFriendSharing: { type: Boolean, default: true },
   tags: [{ type: String, trim: true }],
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   views: { type: Number, default: 0 },
