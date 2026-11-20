@@ -9,6 +9,8 @@ import videoRoutes from './routes/videos.js';
 import commentRoutes from './routes/comments.js';
 import userRoutes from './routes/users.js';
 import playlistRoutes from './routes/playlists.js';
+import friendRoutes from './routes/friends.js';
+import chatRoutes from './routes/chats.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -26,6 +28,8 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/videos/:videoId/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/playlists', playlistRoutes);
+app.use('/api/friends', friendRoutes);
+app.use('/api/chats', chatRoutes);
 
 app.use((req, res) => res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` }));
 app.use((err, _req, res, _next) => {
