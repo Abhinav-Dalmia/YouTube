@@ -27,7 +27,7 @@ export default function WatchPage() {
   const postComment = async (e) => { e.preventDefault(); if (!user) return setError('Sign in to comment.'); try { const { data } = await api.post(`/videos/${id}/comments`, { text: comment }); setComments(c => [data.comment, ...c]); setComment(''); } catch (e) { setError(e.response?.data?.message || 'Comment failed'); } };
   if (!video) return <div className="page">{error ? <div className="empty-state"><h3>{error}</h3><Link to="/">Back to home</Link></div> : <div className="loading-screen">Loading video…</div>}</div>;
   const owner = video.owner || {};
-  return <div className="page watch-page"><div className="watch-layout">
+  return <div className="page watch-page"><div className={`watch-layout ${related.length ? 'has-related' : 'no-related'}`}>
     <section className="watch-main">
       <div className="player-wrap">{video.videoUrl ? <video className="video-player" src={video.videoUrl} controls autoPlay playsInline poster={video.thumbnailUrl || undefined}/> : <div className="player-placeholder"><span>▶</span><p>Video file unavailable</p></div>}</div>
       <h1 className="watch-title">{video.title}</h1>
