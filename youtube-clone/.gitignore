@@ -3,5 +3,6 @@ client/dist
 server/.env
 server/uploads/*
 !server/uploads/.gitkeep
+server/tmp/uploads/*
 .DS_Store
 client/.env
