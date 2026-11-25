@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.resolve(__dirname, '../../uploads');
+const uploadDir = path.resolve(__dirname, '../../tmp/uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -25,3 +25,12 @@ export const upload = multer({
     cb(accepted ? null : new Error(`Unsupported ${file.fieldname} file type`), accepted);
   }
 });
+
+export const uploadVideoFields = (req, res, next) => {
+  upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }])(req, res, async error => {
+    if (!error) return next();
+    const files = Object.values(req.files || {}).flat();
+    await Promise.all(files.map(file => fs.promises.unlink(file.path).catch(() => {})));
+    next(error);
+  });
+};

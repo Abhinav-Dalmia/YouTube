@@ -34,7 +34,7 @@ app.use('/api/chats', chatRoutes);
 app.use((req, res) => res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` }));
 app.use((err, _req, res, _next) => {
   console.error(err);
-  const status = err.name === 'ValidationError' ? 400 : err.name === 'CastError' ? 400 : err.code === 11000 ? 409 : err.name === 'MulterError' ? 400 : 500;
+  const status = err.status || err.http_code || (err.name === 'ValidationError' ? 400 : err.name === 'CastError' ? 400 : err.code === 11000 ? 409 : err.name === 'MulterError' ? 400 : 500);
   res.status(status).json({ message: status === 500 ? 'Something went wrong on the server' : err.message });
 });
 export default app;

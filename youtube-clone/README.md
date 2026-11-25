@@ -75,6 +75,11 @@ A newly installed database is empty. The home page will remain empty until you u
 | `JWT_SECRET` | JWT signing secret | Required |
 | `CLIENT_URL` | Allowed frontend origin(s), comma-separated | `http://localhost:5173` |
 | `MAX_UPLOAD_MB` | Maximum size per uploaded file | `512` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary product environment name | Required for uploads |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | Required for uploads |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret (keep private) | Required for uploads |
+
+Copy `server/.env.example` to `server/.env` and fill in the Cloudinary values from your Cloudinary Console. New videos and thumbnails are sent to Cloudinary; MongoDB stores their secure delivery URLs and Cloudinary public IDs. Temporary upload files are removed from the API server after each request. Existing videos with local `/uploads/...` URLs are unaffected.
 
 ### `client/.env`
 
@@ -121,14 +126,15 @@ youtube-clone/
     │   ├── middleware/     # JWT auth and Multer uploads
     │   ├── models/         # User, Video, Comment, Playlist
     │   └── routes/         # REST API endpoints
-    └── uploads/            # Local development media storage
+    ├── tmp/uploads/        # Temporary staging for incoming video/thumbnail uploads
+    └── uploads/            # Legacy local media for existing records
 ```
 
 ## Important production work before public launch
 
 This is a functional portfolio starter, not a production-scale YouTube replacement. Before exposing it to the public:
 
-- Move video files from `server/uploads` to durable object storage (S3, Cloudinary, or equivalent). Local disk can be ephemeral on many hosting platforms and is not shared across multiple server instances.
+- Configure Cloudinary credentials before accepting uploads. New uploads are stored in Cloudinary; older files under `server/uploads` remain local and should be migrated separately if collaborators or deployed servers need them.
 - Add background transcoding, adaptive bitrate streaming (HLS/DASH), thumbnails, moderation and upload scanning. Current playback serves the uploaded source file directly.
 - Add refresh-token/session revocation, email verification, password reset, stronger abuse prevention and authorization tests.
 - Add pagination/infinite scrolling, recommendation ranking, notifications, playlists UI controls, richer channel editing and complete mobile QA.
