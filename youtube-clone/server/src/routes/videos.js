@@ -2,11 +2,12 @@ import { Router } from 'express';
 import Video from '../models/Video.js';
 import User from '../models/User.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
-import { upload } from '../middleware/upload.js';
+import { uploadVideoFields } from '../middleware/upload.js';
+import { deleteFromCloudinary, uploadToCloudinary } from '../config/cloudinary.js';
 import { asyncHandler } from '../utils.js';
+import fs from 'fs/promises';
 
 const router = Router();
-const baseUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const { q, category, sort = 'newest', limit = 40, page = 1, owner } = req.query;
@@ -33,22 +34,52 @@ router.get('/feed/subscriptions', protect, asyncHandler(async (req, res) => {
   res.json({ videos });
 }));
 
-router.post('/upload', protect, upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), asyncHandler(async (req, res) => {
+router.post('/upload', protect, uploadVideoFields, asyncHandler(async (req, res) => {
   const videoFile = req.files?.video?.[0];
-  if (!videoFile) return res.status(400).json({ message: 'Choose a video file to upload' });
   const { title, description, category = 'All', visibility = 'public', tags = '' } = req.body;
-  if (!title?.trim()) return res.status(400).json({ message: 'Video title is required' });
   const thumbFile = req.files?.thumbnail?.[0];
-  const video = await Video.create({
-    title: title.trim(), description: description || '', category,
-    visibility: ['public', 'unlisted', 'private'].includes(visibility) ? visibility : 'public',
-    tags: String(tags).split(',').map(t => t.trim()).filter(Boolean).slice(0, 15),
-    videoUrl: `${baseUrl(req)}/uploads/${videoFile.filename}`,
-    thumbnailUrl: thumbFile ? `${baseUrl(req)}/uploads/${thumbFile.filename}` : '',
-    owner: req.user._id
-  });
-  await video.populate('owner', 'name handle avatar');
-  res.status(201).json({ video, message: 'Video uploaded successfully' });
+  let cloudVideo;
+  let cloudThumbnail;
+  let recordSaved = false;
+  const stagedFiles = [videoFile, thumbFile].filter(Boolean);
+  try {
+    if (!videoFile) return res.status(400).json({ message: 'Choose a video file to upload' });
+    if (!title?.trim()) return res.status(400).json({ message: 'Video title is required' });
+    cloudVideo = await uploadToCloudinary(videoFile.path, {
+      resourceType: 'video',
+      folder: `youtube-clone/${req.user._id}/videos`
+    });
+    if (thumbFile) {
+      cloudThumbnail = await uploadToCloudinary(thumbFile.path, {
+        resourceType: 'image',
+        folder: `youtube-clone/${req.user._id}/thumbnails`
+      });
+    }
+    const video = await Video.create({
+      title: title.trim(), description: description || '', category,
+      visibility: ['public', 'unlisted', 'private'].includes(visibility) ? visibility : 'public',
+      tags: String(tags).split(',').map(t => t.trim()).filter(Boolean).slice(0, 15),
+      videoUrl: cloudVideo.secure_url,
+      videoPublicId: cloudVideo.public_id,
+      duration: cloudVideo.duration || 0,
+      thumbnailUrl: cloudThumbnail?.secure_url || '',
+      thumbnailPublicId: cloudThumbnail?.public_id || '',
+      owner: req.user._id
+    });
+    recordSaved = true;
+    await video.populate('owner', 'name handle avatar');
+    res.status(201).json({ video, message: 'Video uploaded successfully' });
+  } catch (error) {
+    if (!recordSaved) {
+      await Promise.allSettled([
+        cloudVideo?.public_id ? deleteFromCloudinary(cloudVideo.public_id, 'video') : Promise.resolve(),
+        cloudThumbnail?.public_id ? deleteFromCloudinary(cloudThumbnail.public_id, 'image') : Promise.resolve()
+      ]);
+    }
+    throw error;
+  } finally {
+    await Promise.all(stagedFiles.map(file => fs.unlink(file.path).catch(() => {})));
+  }
 }));
 
 router.get('/:id', optionalAuth, asyncHandler(async (req, res) => {
@@ -110,6 +141,11 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
     (await import('../models/Playlist.js')).default.updateMany({}, { $pull: { videos: video._id } }),
     User.updateMany({}, { $pull: { likedVideos: video._id, watchLater: video._id, watchHistory: { video: video._id } } })
   ]);
+  const cleanup = await Promise.allSettled([
+    video.videoPublicId ? deleteFromCloudinary(video.videoPublicId, 'video') : Promise.resolve(),
+    video.thumbnailPublicId ? deleteFromCloudinary(video.thumbnailPublicId, 'image') : Promise.resolve()
+  ]);
+  for (const result of cleanup) if (result.status === 'rejected') console.error('Cloudinary asset cleanup failed:', result.reason?.message || 'unknown error');
   res.json({ message: 'Video deleted' });
 }));
 
