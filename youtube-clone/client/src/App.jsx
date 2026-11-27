@@ -14,6 +14,7 @@ import { HistoryPage, LikedPage, PlaylistsPage, PlaylistPage, WatchLaterPage } f
 import PlaceholderPage from './pages/PlaceholderPage';
 import FriendsPage from './pages/FriendsPage';
 import './styles.css';
+import './responsive.css';
 
 function RouteLoader() { return <div className="loading-screen">Loading…</div>; }
 export default function App() {
